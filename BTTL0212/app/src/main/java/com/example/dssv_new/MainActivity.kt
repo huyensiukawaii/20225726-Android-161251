@@ -1,5 +1,3 @@
-// File: MainActivity.kt
-
 package com.example.dssv_new
 
 import android.app.Activity
@@ -18,68 +16,72 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var studentAdapter: StudentAdapter
 
-    // Sử dụng biến tĩnh hoặc Singleton để giữ danh sách nếu cần dùng chung cho cả ứng dụng
+    // Sử dụng Companion Object để giữ danh sách dùng chung (giả lập database)
     companion object {
         val studentList = mutableListOf<Student>()
 
-        // Khởi tạo dữ liệu mẫu lần đầu
+        // Khởi tạo dữ liệu mẫu
         init {
             studentList.add(Student("20200001", "Nguyễn Văn A", "0901234567", "Hà Nội"))
             studentList.add(Student("20200002", "Trần Thị B", "0909876543", "TP. Hồ Chí Minh"))
         }
     }
 
-    // Contracts để nhận kết quả từ các Activity
+    // 1. Launcher để nhận kết quả khi THÊM sinh viên (từ AddStudentActivity)
     private val addStudentLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
+            // Lấy object Student được trả về
             val newStudent = result.data?.getSerializableExtra("new_student") as? Student
             if (newStudent != null) {
                 studentList.add(newStudent)
+                // Cập nhật giao diện: Thêm vào cuối danh sách
                 studentAdapter.notifyItemInserted(studentList.size - 1)
-                Toast.makeText(this, "Đã thêm sinh viên: ${newStudent.name}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Đã thêm: ${newStudent.name}", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    // 2. Launcher để nhận kết quả khi CẬP NHẬT sinh viên (từ DetailActivity)
     private val detailStudentLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
+            // Lấy object Student đã sửa và vị trí của nó
             val updatedStudent = result.data?.getSerializableExtra("updated_student") as? Student
             val position = result.data?.getIntExtra("student_position", -1) ?: -1
 
             if (updatedStudent != null && position != -1) {
-                // Cập nhật dữ liệu trong list
+                // Cập nhật dữ liệu trong danh sách gốc
                 studentList[position] = updatedStudent
+                // Cập nhật giao diện tại vị trí đó
                 studentAdapter.notifyItemChanged(position)
-                Toast.makeText(this, "Đã cập nhật thông tin sinh viên: ${updatedStudent.name}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Đã cập nhật: ${updatedStudent.name}", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Dùng layout cũ của bạn, nhưng bỏ các EditText và Button Add/Update
         setContentView(R.layout.activity_main)
-        // Giả sử layout activity_main đã được sửa chỉ còn RecyclerView
 
+        // Ánh xạ RecyclerView
         recyclerView = findViewById(R.id.recyclerView)
 
+        // Cài đặt RecyclerView
         setupRecyclerView()
     }
 
-    // 1. Cấu hình RecyclerView
     private fun setupRecyclerView() {
         studentAdapter = StudentAdapter(
             studentList,
             onStudentClick = { student, position ->
-                // Mở DetailActivity khi click vào sinh viên
+                // Sự kiện khi bấm vào một sinh viên -> Mở Activity chi tiết
                 openDetailActivity(student, position)
             },
             onDeleteClick = { position ->
-                // Khi nhấn xóa
+                // Sự kiện khi bấm nút xóa
                 deleteStudent(position)
             }
         )
@@ -87,17 +89,22 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
     }
 
-    // 2. Xử lý Menu
+    // --- PHẦN MENU (QUAN TRỌNG ĐỂ HIỆN NÚT THÊM) ---
+
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        // Thêm menu item
-        menu?.add(Menu.NONE, 1, Menu.NONE, "Thêm sinh viên")
+        // Tạo một item menu có tên "Thêm sinh viên"
+        val menuItem = menu?.add(Menu.NONE, 1, Menu.NONE, "Thêm sinh viên")
+
+        // Dòng này giúp đưa nút ra ngoài thanh Header nếu còn chỗ (thay vì ẩn trong 3 chấm)
+        menuItem?.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             1 -> {
-                // Mở AddStudentActivity khi nhấn "Thêm sinh viên"
+                // Khi nhấn vào nút "Thêm sinh viên", mở màn hình thêm
                 openAddStudentActivity()
                 true
             }
@@ -105,26 +112,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // 3. Xử lý mở Activity
+    // --- CÁC HÀM CHUYỂN MÀN HÌNH ---
+
     private fun openAddStudentActivity() {
         val intent = Intent(this, AddStudentActivity::class.java)
-        addStudentLauncher.launch(intent) // Dùng launcher để nhận kết quả
+        addStudentLauncher.launch(intent)
     }
 
     private fun openDetailActivity(student: Student, position: Int) {
         val intent = Intent(this, DetailActivity::class.java)
-        intent.putExtra("selected_student", student) // Truyền đối tượng Student
-        intent.putExtra("student_position", position) // Truyền vị trí
-        detailStudentLauncher.launch(intent) // Dùng launcher để nhận kết quả
+        // Truyền dữ liệu sinh viên và vị trí sang màn hình chi tiết
+        intent.putExtra("selected_student", student)
+        intent.putExtra("student_position", position)
+        detailStudentLauncher.launch(intent)
     }
 
-    // 4. Xử lý xóa
+    // --- HÀM XỬ LÝ LOGIC ---
+
     private fun deleteStudent(position: Int) {
         val studentName = studentList[position].name
         studentList.removeAt(position)
+
+        // Xóa item khỏi giao diện
         studentAdapter.notifyItemRemoved(position)
-        // Cập nhật lại index cho các item bên dưới item bị xóa
+        // Cập nhật lại index cho các phần tử phía sau để tránh lỗi vị trí
         studentAdapter.notifyItemRangeChanged(position, studentList.size)
-        Toast.makeText(this, "Đã xóa sinh viên: $studentName", Toast.LENGTH_SHORT).show()
+
+        Toast.makeText(this, "Đã xóa: $studentName", Toast.LENGTH_SHORT).show()
     }
 }

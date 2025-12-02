@@ -1,6 +1,11 @@
-// File: StudentAdapter.kt
+package com.example.dssv_new
 
-// Cập nhật lại StudentAdapter
+import android.view.LayoutInflater // Import cho LayoutInflater
+import android.view.View         // Import cho View
+import android.view.ViewGroup      // Import cho ViewGroup
+import android.widget.ImageView    // Import cho ImageView
+import android.widget.TextView     // Import cho TextView
+import androidx.recyclerview.widget.RecyclerView
 class StudentAdapter(
     private val studentList: MutableList<Student>,
     // Thay đổi onStudentClick để chỉ xử lý việc mở Activity, không còn load dữ liệu lên EditText
