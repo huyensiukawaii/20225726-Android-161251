@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CHI TIẾT VÀ CẬP NHẬT"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="20dp"/>
+
+    <EditText
+        android:id="@+id/edtDetailMssv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Mã số sinh viên"
+        android:inputType="text"
+        android:enabled="false"
+        android:textColor="#999999"/> <EditText
+    android:id="@+id/edtDetailName"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:hint="Họ tên"
+    android:layout_marginTop="8dp"
+    android:inputType="textCapWords"/>
+
+    <EditText
+        android:id="@+id/edtDetailPhone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Số điện thoại"
+        android:layout_marginTop="8dp"
+        android:inputType="phone"/>
+
+    <EditText
+        android:id="@+id/edtDetailAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Địa chỉ"
+        android:layout_marginTop="8dp"
+        android:inputType="text"/>
+
+    <Button
+        android:id="@+id/btnUpdateStudent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="CẬP NHẬT"
+        android:layout_marginTop="24dp"/>
+
+</LinearLayout>
