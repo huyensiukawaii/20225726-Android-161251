@@ -8,16 +8,17 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
-import android.view.ContextMenu
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.webkit.MimeTypeMap
 import android.widget.EditText
+import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -31,12 +32,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvPath: TextView
     private lateinit var adapter: FileAdapter
     private var currentPath: File = Environment.getExternalStorageDirectory()
-    private var selectedFile: File? = null // File đang được nhấn giữ
     private var fileToCopy: File? = null // File đang chờ copy
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
 
         tvPath = findViewById(R.id.tvPath)
         recyclerView = findViewById(R.id.recyclerView)
@@ -67,17 +70,30 @@ class MainActivity : AppCompatActivity() {
     // 2. Hiển thị danh sách file
     private fun loadFiles(directory: File) {
         tvPath.text = directory.absolutePath
+        val isRoot = directory.absolutePath == Environment.getExternalStorageDirectory().absolutePath
+        supportActionBar?.setDisplayHomeAsUpEnabled(!isRoot)
+        supportActionBar?.title = directory.name
         val files = directory.listFiles()?.toList() ?: emptyList()
 
         adapter = FileAdapter(files,
             onFileClick = { file -> openFileOrFolder(file) },
-            onFileLongClick = { file ->
-                selectedFile = file
-                openContextMenu(recyclerView) // Mở menu ngữ cảnh thủ công nếu cần
-            }
+            onMoreClick = { file, view -> showPopupMenu(file, view) }
         )
         recyclerView.adapter = adapter
-        registerForContextMenu(recyclerView) // Đăng ký context menu cho list
+    }
+    
+    private fun showPopupMenu(file: File, view: View) {
+        val popup = PopupMenu(this, view)
+        popup.menu.add(0, 101, 0, "Đổi tên")
+        popup.menu.add(0, 102, 0, "Xóa")
+        if (file.isFile) {
+            popup.menu.add(0, 103, 0, "Sao chép")
+        }
+        popup.setOnMenuItemClickListener { item ->
+            onContextItemSelected(item, file)
+            true
+        }
+        popup.show()
     }
 
     // 3. Xử lý mở File hoặc Folder
@@ -116,31 +132,25 @@ class MainActivity : AppCompatActivity() {
         menu?.add(0, 1, 0, "Tạo thư mục mới")
         menu?.add(0, 2, 0, "Tạo file văn bản mới")
         if (fileToCopy != null) menu?.add(0, 3, 0, "Dán file đã copy") // Nút Paste
+        menu?.add(0, 4, 0, "Tạo dữ liệu test") // Thêm tùy chọn tạo dữ liệu test
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            android.R.id.home -> {
+                onBackPressed() // Gọi lại hàm xử lý nút Back vật lý chúng ta đã viết
+                return true
+            }
             1 -> showCreateDialog(isFolder = true)
             2 -> showCreateDialog(isFolder = false)
             3 -> pasteFile()
+            4 -> createTestData()
         }
         return super.onOptionsItemSelected(item)
     }
 
-    // 5. Context Menu: Đổi tên, Xóa, Copy [cite: 5, 8]
-    override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
-        super.onCreateContextMenu(menu, v, menuInfo)
-        menu?.setHeaderTitle("Thao tác")
-        menu?.add(0, 101, 0, "Đổi tên")
-        menu?.add(0, 102, 0, "Xóa")
-        if (selectedFile?.isFile == true) {
-            menu?.add(0, 103, 0, "Sao chép")
-        }
-    }
-
-    override fun onContextItemSelected(item: MenuItem): Boolean {
-        val file = selectedFile ?: return false
+    private fun onContextItemSelected(item: MenuItem, file: File): Boolean {
         when (item.itemId) {
             101 -> showRenameDialog(file)
             102 -> showDeleteDialog(file)
@@ -154,6 +164,33 @@ class MainActivity : AppCompatActivity() {
     }
 
     // --- CÁC HÀM XỬ LÝ DIALOG & LOGIC ---
+
+    private fun createTestData() {
+        val testFolder = File(Environment.getExternalStorageDirectory(), "TestFolder")
+        if (!testFolder.exists()) testFolder.mkdir()
+
+        val subFolder = File(testFolder, "SubFolder")
+        if (!subFolder.exists()) subFolder.mkdir()
+
+        val testFile1 = File(testFolder, "TestFile1.txt")
+        if (!testFile1.exists()) testFile1.writeText("Đây là nội dung của file test 1.")
+
+        val testFile2 = File(subFolder, "TestFile2.txt")
+        if (!testFile2.exists()) testFile2.writeText("Đây là nội dung của file test 2.")
+
+        val imageFile = File(testFolder, "TestImage.jpg")
+        if (!imageFile.exists()) {
+            // Bạn cần phải có một ảnh mẫu trong thư mục drawable với tên "sample_image"
+            val inputStream = resources.openRawResource(R.drawable.sample_image)
+            inputStream.use { input ->
+                imageFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+        }
+        loadFiles(currentPath)
+        Toast.makeText(this, "Đã tạo dữ liệu test!", Toast.LENGTH_SHORT).show()
+    }
 
     // Dialog tạo mới (Thư mục hoặc File) [cite: 9]
     private fun showCreateDialog(isFolder: Boolean) {

@@ -11,12 +11,13 @@ import java.io.File
 class FileAdapter(
     private var files: List<File>,
     private val onFileClick: (File) -> Unit,
-    private val onFileLongClick: (File) -> Unit
+    private val onMoreClick: (File, View) -> Unit
 ) : RecyclerView.Adapter<FileAdapter.FileViewHolder>() {
 
     class FileViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvName: TextView = view.findViewById(R.id.tvFileName)
         val imgIcon: ImageView = view.findViewById(R.id.imgIcon)
+        val imgMore: ImageView = view.findViewById(R.id.imgMore)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FileViewHolder {
@@ -30,16 +31,21 @@ class FileAdapter(
 
         // Đặt icon tùy theo file hay folder
         if (file.isDirectory) {
-            holder.imgIcon.setImageResource(android.R.drawable.ic_menu_more) // Icon thư mục
+            holder.imgIcon.setImageResource(android.R.drawable.ic_menu_myplaces) // Icon thư mục
         } else {
             holder.imgIcon.setImageResource(android.R.drawable.ic_menu_agenda) // Icon file
         }
 
+        // Nhấn vào item để mở
         holder.itemView.setOnClickListener { onFileClick(file) }
-        holder.itemView.setOnLongClickListener {
-            onFileLongClick(file)
-            false // Trả về false để Context Menu của Activity kích hoạt
+        
+        // Nhấn vào nút "more" để mở menu
+        holder.imgMore.setOnClickListener { view ->
+            onMoreClick(file, view)
         }
+
+        // Bỏ nhấn giữ
+        holder.itemView.setOnLongClickListener(null)
     }
 
     override fun getItemCount() = files.size
